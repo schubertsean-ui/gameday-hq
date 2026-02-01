@@ -1,2 +1,2 @@
 # gameday-hq
-Find your Spot. Talk Your Talk.
+Find Your Spot. Talk Your Talk.
