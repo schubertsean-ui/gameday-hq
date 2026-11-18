@@ -1,0 +1,37 @@
+# revert-on-red.yml — when the post-merge check on `main` goes red, open a revert pull request at once (Google's habit:
+# a broken trunk is reverted in minutes, then fixed calmly). It only OPENS the pull request; it merges nothing. The
+# coordinator merges the revert on green, or closes it if a fix lands first, and writes the fault as a failing order.
+# Needs: Settings → Actions → General → Workflow permissions → "Allow GitHub Actions to create and approve pull requests".
+name: revert-on-red
+on:
+  workflow_run:
+    workflows: [checks]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  revert:
+    if: github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 20 }
+      - name: open a revert pull request for the commit that turned main red
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BAD: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -eu
+          git config user.name "revert-on-red"; git config user.email "revert-on-red@users.noreply.github.com"
+          branch="revert-${BAD:0:7}"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null; then echo "a revert for $BAD is already open"; exit 0; fi
+          git checkout -b "$branch" origin/main
+          parents=$(git rev-list --parents -n 1 "$BAD" | wc -w)
+          if [ "$parents" -gt 2 ]; then git revert --no-edit -m 1 "$BAD"; else git revert --no-edit "$BAD"; fi
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "Revert ${BAD:0:7}: the post-merge check on main went red" \
+            --body "The check on main failed after ${BAD} (run ${{ github.event.workflow_run.html_url }}). This reverts it. Merge on green unless a fix lands first; write the fault as a failing order either way."

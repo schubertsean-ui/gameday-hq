@@ -1,0 +1,36 @@
+# .github/CODEOWNERS — the red lane, owned by the owner. It mirrors kit.json "red_lane"."paths" (tests/test_lanes_and_spend.py
+# holds the two together). With "Require review from Code Owners" on in the ruleset for main, a pull request touching any
+# of these cannot merge without the owner's approval: the code host holds the red lane even if an AI ignores it.
+# Everything else (product code, new tests, docs) merges in the green lane on a green check and the AI reviewer's pass.
+# Existing tests are guarded by tools/checks/tests_untouched.py and tools/checks/lane.py, not here, so new tests stay green.
+/.github/               @schubertsean-ui
+/tools/check            @schubertsean-ui
+/tools/checks/          @schubertsean-ui
+/tools/hooks/           @schubertsean-ui
+/.claude/hooks/         @schubertsean-ui
+/.claude/settings.json  @schubertsean-ui
+/kit.json               @schubertsean-ui
+/AGENTS.md              @schubertsean-ui
+/CLAUDE.md              @schubertsean-ui
+/GEMINI.md              @schubertsean-ui
+migrations/             @schubertsean-ui
+/migrations/            @schubertsean-ui
+*.sql                   @schubertsean-ui
+/supabase/migrations/   @schubertsean-ui
+/supabase/config.toml   @schubertsean-ui
+/prisma/schema.prisma   @schubertsean-ui
+/.env                   @schubertsean-ui
+.env*                   @schubertsean-ui
+secrets/                @schubertsean-ui
+/vercel.json            @schubertsean-ui
+/netlify.toml           @schubertsean-ui
+/wrangler.toml          @schubertsean-ui
+/fly.toml               @schubertsean-ui
+/render.yaml            @schubertsean-ui
+/Procfile               @schubertsean-ui
+/Dockerfile             @schubertsean-ui
+CNAME                   @schubertsean-ui
+/LICENSE*               @schubertsean-ui
+# Raising the test floor is green (tools/checks/floor.py raise); a line with no owner leaves it to the check.
+# Lowering it is still red: tools/checks/lane.py flags it and the AI never merges it.
+/tools/checks/test_floor.txt

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# tools/check — the one command that says whether the PRODUCT is good. No model calls. Its exit code decides.
+#   bash tools/check            full: the tests, the test floor, the protected-files rule, and kit.json's extra checks
+#   bash tools/check --quick    what the Stop hook and the pre-commit hook run: the tests only, stop at the first failure
+#   bash tools/check --base REF compare against REF (default origin/main)
+# Exit 0 only when every blocking section passes. A section that cannot run prints NOT RUN and fails the command.
+# On the code host (CI=true) a skipped test is a failure: nothing may skip there.
+cd "$(dirname "$0")/.." || exit 2
+exec python3 tools/checks/check.py "$@"

@@ -1,0 +1,8 @@
+# docs/SPEND.yaml — each provider's bill, one line per provider per month, copied from the bill itself (never estimated).
+# The weekly scorecard adds them up. "source" says where the figure was read. tools/spend.py counts each bill toward the
+# owner's monthly cap (kit.json "monthly_cap_usd") unless it says counts_toward_cap: false (a flat plan the owner pays
+# outside the cap, written down so it is still seen).
+- month: "2026-11"
+  provider: GitHub Actions
+  amount: 0.00
+  source: "Billing → Budgets, 18 Nov 2026"

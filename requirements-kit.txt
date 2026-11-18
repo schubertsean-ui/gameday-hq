@@ -1,0 +1,5 @@
+# What the kit's own tools need (Python 3.10 or newer). Your product's own packages go in its usual file.
+pytest
+pyyaml
+lxml
+cssselect
