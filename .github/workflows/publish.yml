@@ -3,6 +3,11 @@
 # watch (prompts/freshness-watch.md), which starts it only when the live product is older than its limit.
 # Never on every merge: a merge that starts a long run burns the month's minutes (Happening, 18 Nov 2026).
 # Host: GitHub Pages (Settings → Pages → Source: "GitHub Actions"). Other hosts: replace the last two jobs.
+#
+# gameday-hq (18 Nov 2026): VERCEL IS THE PUBLISHER. Vercel builds and publishes this repository itself after each green
+# merge to main, so this workflow has NO schedule here (a daily run would only duplicate Vercel and fail at the GitHub
+# Pages step, which is not switched on). It stays as a manual-only fallback with the real build command (`npm run build`,
+# checked 18 Nov 2026: it needs no secrets). kit.json "publisher" records this. Bringing the schedule back is red lane.
 name: publish
 on:
   workflow_dispatch:
@@ -12,8 +17,8 @@ on:
         type: choice
         options: ["full", "short"]
         default: "full"
-  schedule:
-    - cron: "47 3 * * *"          # one full run a day; pick a minute away from :00, when GitHub is busiest and drops slots
+  # schedule: none here — Vercel publishes gameday-hq (see the top of this file). The kit's default was:
+  #   - cron: "47 3 * * *"
 permissions:
   contents: read
   actions: read                    # tools/minutes_budget.py reads this month's runs
@@ -23,9 +28,9 @@ concurrency:
   group: publish                   # two publishing runs never overlap
   cancel-in-progress: false
 env:
-  BUILD_FULL: "echo 'set BUILD_FULL to your full build command' && exit 1"     # e.g. make site, npm run build
-  BUILD_SHORT: "echo 'set BUILD_SHORT to your short refresh command' && exit 1"
-  SITE_DIR: "site"                                                             # the folder the build writes
+  BUILD_FULL: "npm install --no-audit --no-fund && npm run build"             # package.json "build": react-scripts build
+  BUILD_SHORT: "npm install --no-audit --no-fund && npm run build"            # the site has no shorter refresh
+  SITE_DIR: "build"                                                            # the folder react-scripts writes
   MIN_PAGES: "1"                                                               # never publish fewer pages than this
 jobs:
   due:

@@ -78,6 +78,10 @@
     "restore_hours": 24
   },
   "publish_workflow": "publish",
+  "publisher": {
+    "host": "vercel",
+    "_what": "gameday-hq: Vercel builds and publishes main after each green merge (green lane). .github/workflows/publish.yml is manual-only here, with no schedule; the freshness watch and the scorecard's publish count should read Vercel's deployments, not that workflow."
+  },
   "check_workflow": "checks",
   "monthly_cap_usd": 50,
   "spend_warn_at": 0.8,
