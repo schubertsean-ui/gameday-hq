@@ -44,9 +44,17 @@ def test_an_ordinary_product_change_is_green():
 
 def test_red_lane_paths_are_flagged():
     for path in [".github/workflows/checks.yml", "tools/checks/check.py", "tools/check", "tools/hooks/protect_tests.py",
-                 ".claude/settings.json", "kit.json", "AGENTS.md", "db/migrations/0002_add.sql", ".env", "vercel.json"]:
+                 ".claude/settings.json", "kit.json", "AGENTS.md", "db/migrations/0002_add.sql", ".env", "vercel.json",
+                 "supabase/functions/x.ts", "prisma/schema.prisma", "db/seeds/users.js", "src/stripe/client.js",
+                 "src/components/StripeCheckout.jsx", "src/billing/invoice.js", "api/payments/charge.js",
+                 "config/pricing.json", "src/checkout/Cart.jsx"]:
         code, why = _classify([("M", "src/App.js", "src/App.js"), ("M", path, path)])
         assert code == lane.RED and any(path in w for w in why), (path, why)
+
+
+def test_the_site_itself_is_green_so_it_publishes_after_checks():
+    for path in ["src/App.js", "src/index.js", "public/index.html", "src/components/Header.jsx", "README.md"]:
+        assert _classify([("M", path, path)])[0] == lane.GREEN, path
 
 
 def test_changing_or_deleting_an_existing_test_is_red():

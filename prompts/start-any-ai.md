@@ -25,8 +25,8 @@ enough for one phone screen.
    (a scheduled workflow) plus a freshness watch where scheduling is available. Owner: one place for every update
    (the Coordinating Work Stream). Failure: every failure becomes a failing test first.
 6. Work in two lanes (AGENTS.md, "Who decides"): green work goes ahead with no approval and merges itself through
-   `tools/checks/lane.py --pr`; red-lane items (spend past the monthly cap, a new paid service, production data or
-   deploy settings, secrets, repo settings, the harness, legal, public posts, messages to people) go in NEXT.md under
+   `tools/checks/lane.py --pr`; red-lane items (spend past the monthly cap, a new paid service, database changes,
+   anything touching money, deploy settings, secrets, repo settings, the harness, legal, public posts, messages to people) go in NEXT.md under
    "Waiting on owner" with a recommendation, while other work goes on. Asks are numbered steps, one action a step,
    naming the button as written on the screen. Each role's model is in kit.json "roles", any vendor.
 

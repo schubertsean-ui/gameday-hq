@@ -6,7 +6,8 @@
 
 GREEN lane: the AI may merge by itself. RED lane: it never merges; the item waits for the owner in NEXT.md under
 "Waiting on owner", and other green work goes on. A change is RED when it:
-  - touches a path in kit.json "red_lane"."paths" (the harness, CI, settings, deploy config, secrets, migrations ...);
+  - touches a path in kit.json "red_lane"."paths" (the harness, CI, settings, deploy config, secrets, the database:
+    migrations, schema, seeds; money: Stripe, billing, payments, pricing, checkout ...);
   - changes or deletes an existing test, fixture or check, or adds a test-runner config (tools/checks/tests_untouched.py);
   - lowers the test floor (raising it is green: python3 tools/checks/floor.py raise);
   - adds an app to docs/APPS.yaml, or changes an app's plan or cap (a new paid service or a new cost).
@@ -14,6 +15,8 @@ A green change can still be NOT YET: more changed lines than kit.json "auto_merg
 --pr it is also NOT YET until the required check ("checks") is green on the head commit and a reviewer that is not the
 builder has commented (or reviewed) "REVIEW: PASS <head sha>" with a "reviewer-model:" line naming a model other than the PR body's
 "builder-model:".
+This gate holds the red lane, not the code host's code-owner review: the AI works through the owner's own account, and
+GitHub does not let an account approve its own pull request. The AI never merges anything but MERGE OK, never with --admin.
 Exit 0: GREEN (with --pr: MERGE OK) · 4: RED, waits for the owner · 5: NOT YET · 3: NOT RUN (no base, no gh, no PR).
 """
 from __future__ import annotations
@@ -41,7 +44,7 @@ GREEN, RED, NOT_YET, NOT_RUN = 0, 4, 5, 3
 
 
 def glob_match(pattern: str, path: str) -> bool:
-    """`**` = any folders (or none), `*` = anything but `/`, `?` = one character. A pattern without `/` matches a name anywhere."""
+    """`**` = any folders (or none), `*` = anything but `/`, `?` = one character; case does not matter. A pattern without `/` matches a name anywhere."""
     if "/" not in pattern:
         pattern = "**/" + pattern
     rx, i = "", 0
@@ -56,7 +59,7 @@ def glob_match(pattern: str, path: str) -> bool:
             rx, i = rx + "[^/]", i + 1
         else:
             rx, i = rx + re.escape(pattern[i]), i + 1
-    return re.fullmatch(rx, path) is not None
+    return re.fullmatch(rx, path, re.IGNORECASE) is not None  # StripeCheckout.jsx is money too
 
 
 def _apps(text: str | None) -> dict[str, tuple[str, str]]:
@@ -149,7 +152,7 @@ def local_change(base: str, head: str | None):
     numstats = [git("diff", "--numstat", "-M", rng).stdout]
     if head is None:  # uncommitted work counts too
         numstats.append(git("diff", "--numstat", "HEAD").stdout)
-        for line in git("status", "--porcelain").stdout.splitlines():
+        for line in git("status", "--porcelain", "--untracked-files=all").stdout.splitlines():  # each new file, not its folder
             code, name = line[:2].strip() or "M", line[3:].split(" -> ")[-1].strip()
             changes.append(("A" if code == "??" else code[0], name, name))
             if code == "??" and (ROOT / name).is_file() and not _excluded(name):

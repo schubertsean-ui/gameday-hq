@@ -8,10 +8,12 @@ project must bring in. Protected files (tests, checks, hooks, `kit.json`) come i
   everything, and the owner does not approve every step. Two lanes in `AGENTS.md`: green (branches, commits, draft
   pull requests, tests, docs, refactors, features, fixes; the AI merges its own pull request when the check is green,
   a reviewer of another model passed it, and `tools/checks/lane.py --pr` says MERGE OK) and red (spend past the cap or a
-  new paid service, production data and deploy settings, secrets, repo settings, the harness, legal, public posts,
+  new paid service, database changes, anything touching money, deploy settings, secrets, repo settings, the harness,
+  legal, public posts,
   messages to people, force-push): it waits in `NEXT.md` under "Waiting on owner" while green work goes on. A morning
-  summary in `STATE.md`. `.github/CODEOWNERS` now owns exactly the red-lane paths, so new tests no longer wait for the
-  owner.
+  summary in `STATE.md`. Publishing after a green merge is green. The red lane is held by the kit's own gate, not
+  by code-owner review (the AI works through the owner's own account, which cannot approve its own pull requests);
+  `.github/CODEOWNERS` lists the red-lane paths as documentation, and new tests no longer wait for the owner.
 - **Added:** `tools/checks/lane.py` (the red-lane paths, existing tests changed, the floor lowered, a new paid app, the
   size limit; with `--pr` also the required check and the reviewer's pass), shown in `bash tools/check`;
   `tools/checks/floor.py` (the installer sets the test floor to the tests collected at install; `floor.py raise` after

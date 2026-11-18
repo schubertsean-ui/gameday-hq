@@ -45,7 +45,9 @@ DEFAULTS = {
                    "review_marker": "REVIEW: PASS", "required_check": "checks"},
     "red_lane": {"paths": [".github/**", "tools/check", "tools/checks/**", "tools/hooks/**", ".claude/hooks/**",
                            ".claude/settings.json", "kit.json", "AGENTS.md", "CLAUDE.md", "GEMINI.md", "**/migrations/**", "migrations/**",
-                           "**/*.sql", ".env", "**/.env*"],
+                           "**/*.sql", "supabase/**", "prisma/**", "**/stripe*/**", "**/*stripe*",
+                           "**/billing/**", "**/*billing*", "**/payments/**", "**/*payment*", "**/pricing/**",
+                           "**/*pricing*", "**/checkout/**", ".env", "**/.env*"],
                  "green_exceptions": ["tools/checks/test_floor.txt"]},
     "roles": {},
 }

@@ -15,7 +15,8 @@ How work runs here:
   leaves its result on the code host as a branch and draft pull request, puts any words of the owner's it heard into
   OWNER_WORDS.md, and sends the owner no separate status.
 - Two lanes (AGENTS.md, "Who decides"): green work goes ahead and merges itself through the gate, with no approval;
-  red-lane items (spend past the $50 monthly cap or a new paid service, production data or deploy settings, secrets,
+  red-lane items (spend past the $50 monthly cap or a new paid service, database changes, anything touching money
+  (payments, Stripe, billing, pricing), deploy settings, secrets,
   repo settings, the harness, legal, public posts, messages to people) go in NEXT.md under "Waiting on owner", as one
   plain paragraph with a recommendation, while other green work goes on.
 - Files are sent one by one, never zipped. A document comes as a link and as a PDF.

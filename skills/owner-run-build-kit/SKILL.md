@@ -23,7 +23,8 @@ The guide: `GUIDE.md` in the kit's home (first published at https://claude.ai/ar
 ## Always
 - Two lanes (AGENTS.md, "Who decides"). Green: the AI builds, tests and merges its own pull request once the check is
   green, another model's review passed and `tools/checks/lane.py --pr` says MERGE OK — no approval, day or night. Red
-  (spend past the monthly cap or a new paid service, production data, deploy config, secrets, repo settings, the
+  (spend past the monthly cap or a new paid service, database changes, anything touching money (payments,
+  Stripe, billing, pricing), deploy config, secrets, repo settings, the
   harness, legal, public posts, messages to people, force-push): written in `NEXT.md` under "Waiting on owner", and
   other green work goes on. A morning summary in `STATE.md` says what got done, what waits, and spend against the cap.
 - Proof the owner can open, or "not checked". One check fails when the product is wrong; never weakened. No key that

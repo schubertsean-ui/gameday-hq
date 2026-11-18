@@ -22,7 +22,7 @@ This kit sets up an AI-built, owner-run project so that the work does not rest o
 
 **To hand the whole thing to an AI,** paste the prompt in the section "Ready prompts" (`prompts/start-any-ai.md`). It makes the AI say what it can do, pick a level, install the kit at that level, prove the gates fire, and start the loops.
 
-**The split of work is fixed, in two lanes.** The owner does not approve every step: work goes on while the owner sleeps. The **green lane** is the AI's alone: branches, commits, draft pull requests, tests, docs, refactors, features and fixes, and merging its own pull request once the check is green, a reviewer of another model has passed it, and the gate (`tools/checks/lane.py --pr`) says MERGE OK. The **red lane** waits for the owner: spend past the monthly cap ($50 in this install) or a new paid service, production data and deploy settings, secrets, domains, billing, repo settings and the harness, legal matters, public announcements, messages to people, force-push. The AI writes each red item in `NEXT.md` under "Waiting on owner" with a recommendation, and goes on with green work. The owner also marks the picture of the finished product right.
+**The split of work is fixed, in two lanes.** The owner does not approve every step: work goes on while the owner sleeps. The **green lane** is the AI's alone: branches, commits, draft pull requests, tests, docs, refactors, features and fixes, publishing the site (the host publishes after `checks` passes), and merging its own pull request once the check is green, a reviewer of another model has passed it, and the gate (`tools/checks/lane.py --pr`) says MERGE OK. The **red lane** waits for the owner: spend past the monthly cap ($50 in this install) or a new paid service, database changes (migrations, schema, production data), anything touching money (payments, Stripe, billing, pricing), deploy settings, secrets, domains, repo settings and the harness, legal matters, public announcements, messages to people, force-push. The AI writes each red item in `NEXT.md` under "Waiting on owner" with a recommendation, and goes on with green work. The owner also marks the picture of the finished product right.
 
 ## The idea on one page
 
@@ -75,10 +75,10 @@ The owner's words, 18 Nov 2026: "I do not want to have to approve every single t
 
 | Lane | What is in it | What the AI does |
 | --- | --- | --- |
-| Green | Branches, commits, draft pull requests, tests, docs, refactors, features, fixes; paid runs while the month is under the cap | Does it, day or night. Merges its own pull request only when all hold: the required check `checks` is green; a reviewer that did not write it (another model, another vendor where possible) commented `REVIEW: PASS <head sha>`; no existing test changed; the test floor not lowered; under 400 changed lines (`kit.json` "auto_merge"); no red-lane path. `python3 tools/checks/lane.py --pr <n>` checks all of these and says MERGE OK, RED or NOT YET |
-| Red | Spend that would pass the cap, a new paid service or subscription; production migrations, data writes or deletes; production deploy config, secrets, env vars, domains, billing; repo settings, branch protection, CODEOWNERS, CI workflows and harness files (`tools/checks/**`, `tools/hooks/**`, `.github/**`, `.claude/settings.json`, `kit.json`, `AGENTS.md`, lowering the test floor); deleting a repo or a branch with unmerged work; anything legal, public announcements, messages or emails to people; force-push or rewriting history | Stops that item, writes it in `NEXT.md` under "Waiting on owner" (one plain paragraph: what, why, the recommendation, what happens without an answer), and keeps going on green work. It may open a draft pull request for the owner; it never merges it |
+| Green | Branches, commits, draft pull requests, tests, docs, refactors, features, fixes; publishing the site after a green merge (Vercel publishes once `checks` passes); paid runs while the month is under the cap | Does it, day or night. Merges its own pull request only when all hold: the required check `checks` is green; a reviewer that did not write it (another model, another vendor where possible) commented `REVIEW: PASS <head sha>`; no existing test changed; the test floor not lowered; under 400 changed lines (`kit.json` "auto_merge"); no red-lane path. `python3 tools/checks/lane.py --pr <n>` checks all of these and says MERGE OK, RED or NOT YET |
+| Red | Spend that would pass the cap, a new paid service or subscription; database changes (migrations, schema, seeds, production data writes or deletes); anything touching money (payments, Stripe, billing or checkout code, pricing, paid services); deploy config files, secrets, env vars, domains; repo settings, branch protection, CODEOWNERS, CI workflows and harness files (`tools/checks/**`, `tools/hooks/**`, `.github/**`, `.claude/settings.json`, `kit.json`, `AGENTS.md`, lowering the test floor); deleting a repo or a branch with unmerged work; anything legal, public announcements, messages or emails to people; force-push or rewriting history | Stops that item, writes it in `NEXT.md` under "Waiting on owner" (one plain paragraph: what, why, the recommendation, what happens without an answer), and keeps going on green work. It may open a draft pull request for the owner; it never merges it |
 
-**Machine-checked, twice.** The red-lane paths live in `kit.json` "red_lane"; `tools/checks/lane.py` flags any change touching them (and `bash tools/check` shows its verdict). `.github/CODEOWNERS` lists the same paths with the owner as code owner, so with "Require review from Code Owners" switched on, the code host refuses a red-lane merge without the owner even if an AI ignored the rule. A test keeps the two lists the same.
+**Machine-checked by the kit, not by code-owner review.** The red-lane paths live in `kit.json` "red_lane" (the harness and CI; the database: migrations, schema, seeds, `supabase/`, `prisma/`, `*.sql`; money: Stripe, billing, payments, pricing, checkout; secrets and deploy config); `tools/checks/lane.py` flags any change touching them, matching names in any case (and `bash tools/check` shows its verdict). The AI works through the owner's own GitHub account, and GitHub does not let an account approve its own pull request, so the ruleset does **not** require Code Owners review: that would block the owner's own red-lane merges too. The lane is held by the gate (the AI merges nothing but MERGE OK, never with `--admin`), `NEXT.md` "Waiting on owner" and the morning summary. `.github/CODEOWNERS` lists the same paths as documentation; a test keeps the two lists the same. The code host still holds what it can: nothing reaches `main` without a green `checks`, and no force-push.
 
 **The morning summary.** At the end of each work session, and at least once a day, the coordinator replaces the top of `STATE.md`: what got done with pull request links, what works and what doesn't, what it means for the owner, what waits on the owner, spend this month against the cap, and the one decision needed.
 
@@ -129,7 +129,7 @@ Six layers of gates, from the AI's own session out to the live product. The inne
 | 2 | Git hooks (`tools/hooks/install_git_hooks.sh`) | In every copy of the repository, for any AI tool or person | A commit while the quick check is red; a push while the full check is red | Yes, with `--no-verify`. Layer 5 catches that |
 | 3 | The one product check (`bash tools/check`) | Anywhere; no model is used | Failing tests; deselected tests; any skipped test on the code host; fewer tests than the floor (set at install, so a deleted test file is RED from the first day); an existing test changed in the same change as other files; any extra check named in `kit.json` (a page-size budget, a screenshot audit). It also shows, without deciding, the change's lane and the month's spend | Only by changing the check, which layers 1, 4 and 5 stop |
 | 4 | Working rules held as tests (`tests/test_working_rules.py`, `tests/test_harness.py`) | Inside the product check | `NEXT.md` longer than one short line, or not loaded; `AGENTS.md` or `STATE.md` growing; a change that is only rules and records with no product in it (unless the owner's dated words asked for it); a product change that does not update where things stand; a hook that blocks when it cannot find itself | No: they are tests, and tests are protected |
-| 5 | The code host (ruleset on `main`, `.github/workflows/checks.yml`, `.github/CODEOWNERS`) | On the code host, out of the AI's reach | Any change reaching `main` except by a pull request whose `checks` job is green; a second run after each merge catches two merges that conflict; with "Require review from Code Owners", the owner's own approval for any red-lane path | No. Only the owner can change the ruleset |
+| 5 | The code host (ruleset on `main`, `.github/workflows/checks.yml`, `.github/CODEOWNERS`) | On the code host, out of the AI's reach | Any change reaching `main` except by a pull request whose `checks` job is green; a second run after each merge catches two merges that conflict; no force-push to `main`. (The red lane is held by `tools/checks/lane.py`, not here: the AI uses the owner's own account) | No. Only the owner can change the ruleset |
 | 6 | Live judges (`tools/orders.py`, `freshness.py`, `stranded.py`, `minutes_budget.py`, the publishing workflow's own guards) | Against the live product and the code host | An order marked done that fails on the live product; a fixed fault that breaks again; a stale product; work pushed but never merged; a month's CI minutes overrun; publishing an empty product | No. They read the product itself, not a report about it |
 
 **What the AI never holds.** A key that can delete live data. The database and model keys live only in the code host's secret store and are read only by the publishing run. A session that reads outside pages holds no key that can publish or change live data, because outside text can try to give instructions.
@@ -238,7 +238,7 @@ One coordinator, many short-lived helpers, and a plan the machine can check. The
 | When a screen is complete | A picture of the live screen beside its approved picture: the owner's eye is the last test |
 | Weekly | Orders passing on the live product, faults open, spend |
 | Each morning | The morning summary at the top of `STATE.md`: done, waiting on you, spend against the cap, the one decision |
-| Always, personally | The red lane: spend past the cap, new paid services, production data and deploy settings, secrets, repo settings and the harness, legal, public posts, messages to people |
+| Always, personally | The red lane: spend past the cap, new paid services, database changes, anything touching money, deploy settings, secrets, repo settings and the harness, legal, public posts, messages to people |
 | Not at all | Code, status files, ledgers |
 
 **Records that stay.** The ask-the-lawyer list (each item framed in detail, with the other party's own words, a real example and the exact question) does not hold up the work unless the owner says so. The ideas register keeps every idea from the owner's documents, with where it was written, unranked: the owner sorts. Before moving to a new chat or another AI, a handoff note (`prompts/handoff-note.md`) is written first.
@@ -255,7 +255,7 @@ Google's and Cursor's engineering teams keep quality, speed and cost in line wit
 | The four delivery measures | How often the product was published, pull request to merge, share of merges that broke `main`, fault found to fixed live, every week | `tools/scorecard.py` |
 | Helpers working in parallel, each attaching its evidence | Fresh helpers on their own branches; each pull request carries the check's output and a picture or link | `prompts/helper-brief.md`, agent `builder` |
 | Every correction becomes a test | The failure loop, and a lessons register in which every lesson names the check that now holds it | `work/ORDERS_FORMAT.md`, `docs/LEARNINGS.md` |
-| Routine changes merge on green; changes to the referee need a person | Green lane merges on a green check and another model's review; code owners on every red-lane path | `.github/CODEOWNERS`, `tools/checks/lane.py` |
+| Routine changes merge on green; changes to the referee need a person | Green lane merges on a green check and another model's review; the red-lane paths wait for the owner, held by the kit's gate | `tools/checks/lane.py`, `.github/CODEOWNERS` (documentation) |
 | Design reviewed against the approved picture | The judge puts a picture of each live screen beside its approved picture; visual comparisons plug in as extra checks | `work/ROLES.md`, `kit.json` "extra\_checks" |
 | Every vendor written down, capped and reviewed | Each outside app with its most powerful access, who holds its key, a hard cap at the provider, where real usage is read, a fallback and a monthly review; unsafe entries refused | `docs/APPS.yaml`, `tools/apps.py` |
 | Least privilege, and defence against instructions hidden in outside text | A session that reads pages, emails or issues holds no key that can write, deploy or publish | `tools/apps.py check` |
@@ -309,7 +309,7 @@ Claude does not learn between chats by itself, so lessons are written to files a
 
 **What keeps the loop honest**
 
-- The owner approves every change to the kit's tests, checks and hooks (code owners), and every skill update (the review card).
+- The owner approves every change to the kit's tests, checks and hooks (red lane), and every skill update (the review card).
 - A rule is added only after a real failure, and only when a check cannot hold it. A rule no project needed in 60 days is proposed for removal, and `AGENTS.md` stays under 100 lines.
 - Every version says what changed, why, and which project's lesson it came from.
 - Claude's memory keeps preferences stated in chats on its own; the kit keeps lessons. Neither replaces the other.
@@ -323,7 +323,7 @@ About an hour of the owner's clicks, spread over the first day, and the rest is 
 1. **A home for the code.** Create an organisation or account on the code host and a private repository. For a private repository to block merges until the check is green, GitHub needs the Pro, Team or Enterprise plan; GitHub Free allows it on public repositories only. You should see an empty repository page.
 2. **Give the AI access.** In Claude: connect GitHub and allow the repository. In another agent: its own GitHub connection. You should see the AI clone the repository.
 3. **Let the AI install the kit** (its steps are below). You should see a pull request whose `checks` job is green, and a second one the AI made red on purpose.
-4. **Switch on the judge.** Repository → Settings → Rules → Rulesets → New ruleset → New branch ruleset. Name: "main is judged". Enforcement status: Active. Target branches: Include default branch. Tick "Require a pull request before merging" (approvals 0) and "Require review from Code Owners", so red-lane changes wait for you and everything else does not. Tick "Require status checks to pass" and add the check named `checks`. Leave the bypass list empty. Press Create. You should see the AI's red pull request unable to merge.
+4. **Switch on the judge.** Repository → Settings → Rules → Rulesets → New ruleset → New branch ruleset. Name: "main is judged". Enforcement status: Active. Target branches: Add target → Include default branch. Tick "Require status checks to pass", then Add checks, type `checks` and pick it. Keep "Block force pushes" ticked. Do **not** tick "Require review from Code Owners" (with one shared account it would block every red-lane merge, yours too). Leave the bypass list empty. Press Create. You should see a pull request with a red `checks` unable to merge.
 5. **Spending limits.** On the code host: Billing → Budgets, an Actions budget (Happening: $5). At each model provider and paid service: a hard monthly cap, together no more than the kit's cap (`kit.json` "monthly_cap_usd", $50 here). This is the hard backstop; the kit's own count stops the AI first. You should see each limit on its provider's page.
 6. **Secrets.** Repository → Settings → Secrets and variables → Actions → New repository secret: the database address and any model key the publishing run needs. Type them there, never in a chat.
 7. **Hosting.** Repository → Settings → Pages → Source: GitHub Actions, and your custom domain. You should see the live address after the first publishing run.
@@ -413,8 +413,8 @@ enough for one phone screen.
    (a scheduled workflow) plus a freshness watch where scheduling is available. Owner: one place for every update
    (the Coordinating Work Stream). Failure: every failure becomes a failing test first.
 6. Work in two lanes (AGENTS.md, "Who decides"): green work goes ahead with no approval and merges itself through
-   `tools/checks/lane.py --pr`; red-lane items (spend past the monthly cap, a new paid service, production data or
-   deploy settings, secrets, repo settings, the harness, legal, public posts, messages to people) go in NEXT.md under
+   `tools/checks/lane.py --pr`; red-lane items (spend past the monthly cap, a new paid service, database changes,
+   anything touching money, deploy settings, secrets, repo settings, the harness, legal, public posts, messages to people) go in NEXT.md under
    "Waiting on owner" with a recommendation, while other work goes on. Asks are numbered steps, one action a step,
    naming the button as written on the screen. Each role's model is in kit.json "roles", any vendor.
 
@@ -443,7 +443,7 @@ Attach `kit-all-files.md` (or `install-kit.sh`) with it, so the AI has the files
 | `.claude/agents/reader.md` | Management | Small-model batch reader of saved pages or documents | Name your reader's instruction file |
 | `.claude/agents/builder.md` | Management | Mid-model builder of one work order | As is |
 | `.claude/skills/operating-rules/SKILL.md` | Brain | Pointer skill for chats; upload it as an account skill too | Fill |
-| `.github/CODEOWNERS` | Harness | The red-lane paths, owned by the owner | As is (set to @schubertsean-ui) |
+| `.github/CODEOWNERS` | Harness | The red-lane paths, written down (documentation; the gate is `lane.py`) | As is (set to @schubertsean-ui) |
 | `.github/workflows/checks.yml` | Harness | The required check on every pull request, and again after each merge | As is; add your language's setup step |
 | `.github/workflows/publish.yml` | Loops | The product's own timetable: minutes guard, build, never-empty guard, publish | Set the build commands and folder |
 | `docs/ASK_THE_LAWYER.md` | Brain | The running lawyer list, one framed question per item | Fill as questions come up |
@@ -525,19 +525,22 @@ The kit's gates were run red and green in a scratch repository before it was sen
 
 | Scenario | 1.1.0 | 1.1.1 |
 | --- | --- | --- |
-| Kit tests pass | 24 passed | 39 passed |
+| Kit tests pass | 24 passed | 40 passed |
 | `bash tools/check` on a fresh install | GREEN | GREEN |
 | Break a test | RED | RED |
 | Edit an existing test and product in one change | RED | RED |
-| Delete a test file | **GREEN** (floor was 0) | RED (floor set to 39 at install) |
+| Delete a test file | **GREEN** (floor was 0) | RED (floor set to 40 at install) |
 | Touch a red-lane path | nothing flags it | flagged, exit 4 |
 | Lower the test floor | nothing flags it | flagged, exit 4 |
+| A database migration (`supabase/migrations/…sql`) | nothing flags it | flagged, exit 4 |
+| Money code (`src/components/StripeCheckout.jsx`) | nothing flags it | flagged, exit 4 |
+| Ordinary site code (`src/`, `public/`) | — | green lane: publishes after `checks` passes |
 | Spend over the cap | nothing counts it | exit 2; a run that would pass the cap is refused; WARN at 82% |
 | Add a test and raise the floor with product code | — | GREEN, green lane |
 | The files in `KIT.md` against the installer | — | 0 differences (70 files) |
 | The `checks` job on GitHub (gameday-hq pull request 1) | — | first run failed in 3 s (pip cache wanted a requirements.txt); fixed in 1.1.1 and held by a test |
 
-Not tested in 1.1.1: `lane.py --pr` against a real pull request on GitHub (its parts are tested with recorded answers), and the ruleset with code owners on.
+Not tested in 1.1.1: `lane.py --pr` against a real pull request on GitHub (its parts are tested with recorded answers), and the ruleset itself (it needs the owner's settings page).
 
 **Tested for version 1.1.0, the same day**
 

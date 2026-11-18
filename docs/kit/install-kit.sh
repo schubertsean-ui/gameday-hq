@@ -49,8 +49,8 @@ It is vendor-neutral: Codex, Cursor, Copilot and others read it directly; Claude
 - Before ending: put the next step in `NEXT.md`, replacing what is there; leave the work on a pushed branch and pull request; write the morning summary (below).
 
 ## Who decides — two lanes, so work goes on while the owner sleeps (`python3 tools/checks/lane.py` checks the paths)
-- **Green lane — the AI does it, no approval:** branches, commits, draft pull requests, tests, docs, refactors, features, fixes. It merges its own pull request to `main` only when `python3 tools/checks/lane.py --pr <n>` says MERGE OK: the required check `checks` is green; a reviewer that did not write it (another model, another vendor where possible: `kit.json` "roles") commented `REVIEW: PASS <head sha>`; no existing test changed and the test floor not lowered; under `kit.json` "auto_merge" "max_changed_lines" (400); no red-lane path. Paid runs are green while the month stays under the cap (Cost).
-- **Red lane — the AI stops that item, writes it in `NEXT.md` under "Waiting on owner" (one plain paragraph: what, why it needs the owner, the AI's recommendation, what happens without an answer), and keeps doing green work:** spend that would pass the cap, or any new paid service or subscription; production database migrations, production data writes or deletes; production deploy config, secrets, env vars, domains, billing; repo settings, branch protection, CODEOWNERS, CI workflows and the harness (`kit.json` "red_lane", lowering the test floor); deleting a repo or a branch with unmerged work; anything legal, any public announcement, any message or email to a person; force-push or rewriting history. A red-lane pull request may be opened as a draft; the AI never merges it.
+- **Green lane — the AI does it, no approval:** branches, commits, draft pull requests, tests, docs, refactors, features, fixes, and publishing: a green merge to `main` goes live (the host publishes after `checks` passes). It merges its own pull request to `main` only when `python3 tools/checks/lane.py --pr <n>` says MERGE OK: the required check `checks` is green; a reviewer that did not write it (another model, another vendor where possible: `kit.json` "roles") commented `REVIEW: PASS <head sha>`; no existing test changed and the test floor not lowered; under `kit.json` "auto_merge" "max_changed_lines" (400); no red-lane path. Paid runs are green while the month stays under the cap (Cost).
+- **Red lane — the AI stops that item, writes it in `NEXT.md` under "Waiting on owner" (one plain paragraph: what, why it needs the owner, the AI's recommendation, what happens without an answer), and keeps doing green work:** spend that would pass the cap, or any new paid service or subscription; database changes (migrations, schema, seeds, production data writes or deletes); anything touching money (payments, Stripe, billing or checkout code, pricing, paid services); deploy config files, secrets, env vars, domains; repo settings, branch protection, CODEOWNERS, CI workflows and the harness (`kit.json` "red_lane", lowering the test floor); deleting a repo or a branch with unmerged work; anything legal, any public announcement, any message or email to a person; force-push or rewriting history. A red-lane pull request may be opened as a draft; the AI never merges it. The code host does not hold this lane (the AI works through the owner's own account, which cannot approve its own pull requests); `lane.py`, `NEXT.md` and the morning summary do, so the AI merges nothing but MERGE OK and never with `--admin`.
 - **Morning summary:** at the end of each work session, and at least once a day while work runs, the coordinator replaces the "Morning summary" in `STATE.md`: what got done (pull request links), what works and what doesn't, what it means for the owner, what waits on the owner, spend this month against the cap (`python3 tools/spend.py status`), and the one decision needed.
 - An ask to the owner says in one plain sentence what it is for, then numbered steps: one action a step, the page and the button as written on the screen, and what the owner should see when it worked. A step the AI has not seen on the screen itself says so.
 - The owner's updates go to one place, the Coordinating Work Stream ({{COORDINATOR_LINK}}); every message leads with what the owner can now see. Any other session leaves its result on the code host and sends the owner nothing. The coordinator plans, merges through the gate, judges on the live product, gives each build step to a fresh helper on its own branch, and reads its in-tray: `tools/stranded.py`, the open pull requests, the project space.
@@ -265,7 +265,7 @@ put 'kit.json' <<'__KIT_FILE_END_q7x2__'
     "required_check": "checks"
   },
   "red_lane": {
-    "_what": "Paths that put a pull request in the red lane: the AI never merges it; it waits for the owner (NEXT.md, 'Waiting on owner'). ** = any folders. Also red: an existing test changed or deleted, the test floor lowered, a new app (or a changed plan or cap) in docs/APPS.yaml. Raising the test floor is green.",
+    "_what": "Paths that put a pull request in the red lane: the AI never merges it; it waits for the owner (NEXT.md, 'Waiting on owner'). ** = any folders. The owner's decision of 18 Nov 2026: database changes (migrations, schema, production data) and anything touching money (payments, Stripe, billing, pricing, paid services) are red; publishing the site after a green merge is green. Also red: an existing test changed or deleted, the test floor lowered, a new app (or a changed plan or cap) in docs/APPS.yaml. Raising the test floor is green. This gate, not the code host's code-owner review, holds the red lane: the AI works through the owner's own GitHub account.",
     "paths": [
       ".github/**",
       "tools/check",
@@ -280,9 +280,22 @@ put 'kit.json' <<'__KIT_FILE_END_q7x2__'
       "**/migrations/**",
       "migrations/**",
       "**/*.sql",
-      "supabase/migrations/**",
-      "supabase/config.toml",
-      "prisma/schema.prisma",
+      "**/schema.sql",
+      "**/schema.prisma",
+      "supabase/**",
+      "prisma/**",
+      "**/db/schema*",
+      "**/seeds/**",
+      "**/stripe*/**",
+      "**/*stripe*",
+      "**/billing/**",
+      "**/*billing*",
+      "**/payments/**",
+      "**/*payment*",
+      "**/pricing/**",
+      "**/*pricing*",
+      "**/plans.json",
+      "**/checkout/**",
       ".env",
       "**/.env*",
       "**/secrets/**",
@@ -349,10 +362,12 @@ project must bring in. Protected files (tests, checks, hooks, `kit.json`) come i
   everything, and the owner does not approve every step. Two lanes in `AGENTS.md`: green (branches, commits, draft
   pull requests, tests, docs, refactors, features, fixes; the AI merges its own pull request when the check is green,
   a reviewer of another model passed it, and `tools/checks/lane.py --pr` says MERGE OK) and red (spend past the cap or a
-  new paid service, production data and deploy settings, secrets, repo settings, the harness, legal, public posts,
+  new paid service, database changes, anything touching money, deploy settings, secrets, repo settings, the harness,
+  legal, public posts,
   messages to people, force-push): it waits in `NEXT.md` under "Waiting on owner" while green work goes on. A morning
-  summary in `STATE.md`. `.github/CODEOWNERS` now owns exactly the red-lane paths, so new tests no longer wait for the
-  owner.
+  summary in `STATE.md`. Publishing after a green merge is green. The red lane is held by the kit's own gate, not
+  by code-owner review (the AI works through the owner's own account, which cannot approve its own pull requests);
+  `.github/CODEOWNERS` lists the red-lane paths as documentation, and new tests no longer wait for the owner.
 - **Added:** `tools/checks/lane.py` (the red-lane paths, existing tests changed, the floor lowered, a new paid app, the
   size limit; with `--pr` also the required check and the reviewer's pass), shown in `bash tools/check`;
   `tools/checks/floor.py` (the installer sets the test floor to the tests collected at install; `floor.py raise` after
@@ -571,11 +586,12 @@ that file disagree, the file wins. Disk is truth; chat memory is not.
 Leave the work where it outlives the chat, say where, and say what exists only in this chat's workspace.
 __KIT_FILE_END_q7x2__
 put '.github/CODEOWNERS' <<'__KIT_FILE_END_q7x2__'
-# .github/CODEOWNERS — the red lane, owned by the owner. It mirrors kit.json "red_lane"."paths" (tests/test_lanes_and_spend.py
-# holds the two together). With "Require review from Code Owners" on in the ruleset for main, a pull request touching any
-# of these cannot merge without the owner's approval: the code host holds the red lane even if an AI ignores it.
-# Everything else (product code, new tests, docs) merges in the green lane on a green check and the AI reviewer's pass.
-# Existing tests are guarded by tools/checks/tests_untouched.py and tools/checks/lane.py, not here, so new tests stay green.
+# .github/CODEOWNERS — the red lane, written down. It mirrors kit.json "red_lane"."paths" (tests/test_lanes_and_spend.py
+# holds the two together) so anyone reading the repository can see which paths wait for the owner.
+# It is DOCUMENTATION here, not the lock: the AI works through the owner's own GitHub account, and GitHub does not let
+# an account approve its own pull request, so the ruleset for main does NOT turn on "Require review from Code Owners"
+# (that would block every red-lane merge, the owner's too). The red lane is held by tools/checks/lane.py (the AI merges
+# only on MERGE OK), NEXT.md "Waiting on owner" and the morning summary in STATE.md (the owner decision of 18 Nov 2026).
 /.github/               @schubertsean-ui
 /tools/check            @schubertsean-ui
 /tools/checks/          @schubertsean-ui
@@ -589,9 +605,22 @@ put '.github/CODEOWNERS' <<'__KIT_FILE_END_q7x2__'
 migrations/             @schubertsean-ui
 /migrations/            @schubertsean-ui
 *.sql                   @schubertsean-ui
-/supabase/migrations/   @schubertsean-ui
-/supabase/config.toml   @schubertsean-ui
-/prisma/schema.prisma   @schubertsean-ui
+schema.sql              @schubertsean-ui
+schema.prisma           @schubertsean-ui
+/supabase/              @schubertsean-ui
+/prisma/                @schubertsean-ui
+**/db/schema*           @schubertsean-ui
+seeds/                  @schubertsean-ui
+stripe*/                @schubertsean-ui
+*stripe*                @schubertsean-ui
+billing/                @schubertsean-ui
+*billing*               @schubertsean-ui
+payments/               @schubertsean-ui
+*payment*               @schubertsean-ui
+pricing/                @schubertsean-ui
+*pricing*               @schubertsean-ui
+plans.json              @schubertsean-ui
+checkout/               @schubertsean-ui
 /.env                   @schubertsean-ui
 .env*                   @schubertsean-ui
 secrets/                @schubertsean-ui
@@ -1101,7 +1130,8 @@ How work runs here:
   leaves its result on the code host as a branch and draft pull request, puts any words of the owner's it heard into
   OWNER_WORDS.md, and sends the owner no separate status.
 - Two lanes (AGENTS.md, "Who decides"): green work goes ahead and merges itself through the gate, with no approval;
-  red-lane items (spend past the $50 monthly cap or a new paid service, production data or deploy settings, secrets,
+  red-lane items (spend past the $50 monthly cap or a new paid service, database changes, anything touching money
+  (payments, Stripe, billing, pricing), deploy settings, secrets,
   repo settings, the harness, legal, public posts, messages to people) go in NEXT.md under "Waiting on owner", as one
   plain paragraph with a recommendation, while other green work goes on.
 - Files are sent one by one, never zipped. A document comes as a link and as a PDF.
@@ -1157,8 +1187,8 @@ enough for one phone screen.
    (a scheduled workflow) plus a freshness watch where scheduling is available. Owner: one place for every update
    (the Coordinating Work Stream). Failure: every failure becomes a failing test first.
 6. Work in two lanes (AGENTS.md, "Who decides"): green work goes ahead with no approval and merges itself through
-   `tools/checks/lane.py --pr`; red-lane items (spend past the monthly cap, a new paid service, production data or
-   deploy settings, secrets, repo settings, the harness, legal, public posts, messages to people) go in NEXT.md under
+   `tools/checks/lane.py --pr`; red-lane items (spend past the monthly cap, a new paid service, database changes,
+   anything touching money, deploy settings, secrets, repo settings, the harness, legal, public posts, messages to people) go in NEXT.md under
    "Waiting on owner" with a recommendation, while other work goes on. Asks are numbered steps, one action a step,
    naming the button as written on the screen. Each role's model is in kit.json "roles", any vendor.
 
@@ -1229,7 +1259,8 @@ The guide: `GUIDE.md` in the kit's home (first published at https://claude.ai/ar
 ## Always
 - Two lanes (AGENTS.md, "Who decides"). Green: the AI builds, tests and merges its own pull request once the check is
   green, another model's review passed and `tools/checks/lane.py --pr` says MERGE OK — no approval, day or night. Red
-  (spend past the monthly cap or a new paid service, production data, deploy config, secrets, repo settings, the
+  (spend past the monthly cap or a new paid service, database changes, anything touching money (payments,
+  Stripe, billing, pricing), deploy config, secrets, repo settings, the
   harness, legal, public posts, messages to people, force-push): written in `NEXT.md` under "Waiting on owner", and
   other green work goes on. A morning summary in `STATE.md` says what got done, what waits, and spend against the cap.
 - Proof the owner can open, or "not checked". One check fails when the product is wrong; never weakened. No key that
@@ -1469,9 +1500,17 @@ def test_an_ordinary_product_change_is_green():
 
 def test_red_lane_paths_are_flagged():
     for path in [".github/workflows/checks.yml", "tools/checks/check.py", "tools/check", "tools/hooks/protect_tests.py",
-                 ".claude/settings.json", "kit.json", "AGENTS.md", "db/migrations/0002_add.sql", ".env", "vercel.json"]:
+                 ".claude/settings.json", "kit.json", "AGENTS.md", "db/migrations/0002_add.sql", ".env", "vercel.json",
+                 "supabase/functions/x.ts", "prisma/schema.prisma", "db/seeds/users.js", "src/stripe/client.js",
+                 "src/components/StripeCheckout.jsx", "src/billing/invoice.js", "api/payments/charge.js",
+                 "config/pricing.json", "src/checkout/Cart.jsx"]:
         code, why = _classify([("M", "src/App.js", "src/App.js"), ("M", path, path)])
         assert code == lane.RED and any(path in w for w in why), (path, why)
+
+
+def test_the_site_itself_is_green_so_it_publishes_after_checks():
+    for path in ["src/App.js", "src/index.js", "public/index.html", "src/components/Header.jsx", "README.md"]:
+        assert _classify([("M", path, path)])[0] == lane.GREEN, path
 
 
 def test_changing_or_deleting_an_existing_test_is_red():
@@ -2359,7 +2398,8 @@ put 'tools/checks/lane.py' <<'__KIT_FILE_END_q7x2__'
 
 GREEN lane: the AI may merge by itself. RED lane: it never merges; the item waits for the owner in NEXT.md under
 "Waiting on owner", and other green work goes on. A change is RED when it:
-  - touches a path in kit.json "red_lane"."paths" (the harness, CI, settings, deploy config, secrets, migrations ...);
+  - touches a path in kit.json "red_lane"."paths" (the harness, CI, settings, deploy config, secrets, the database:
+    migrations, schema, seeds; money: Stripe, billing, payments, pricing, checkout ...);
   - changes or deletes an existing test, fixture or check, or adds a test-runner config (tools/checks/tests_untouched.py);
   - lowers the test floor (raising it is green: python3 tools/checks/floor.py raise);
   - adds an app to docs/APPS.yaml, or changes an app's plan or cap (a new paid service or a new cost).
@@ -2367,6 +2407,8 @@ A green change can still be NOT YET: more changed lines than kit.json "auto_merg
 --pr it is also NOT YET until the required check ("checks") is green on the head commit and a reviewer that is not the
 builder has commented (or reviewed) "REVIEW: PASS <head sha>" with a "reviewer-model:" line naming a model other than the PR body's
 "builder-model:".
+This gate holds the red lane, not the code host's code-owner review: the AI works through the owner's own account, and
+GitHub does not let an account approve its own pull request. The AI never merges anything but MERGE OK, never with --admin.
 Exit 0: GREEN (with --pr: MERGE OK) · 4: RED, waits for the owner · 5: NOT YET · 3: NOT RUN (no base, no gh, no PR).
 """
 from __future__ import annotations
@@ -2394,7 +2436,7 @@ GREEN, RED, NOT_YET, NOT_RUN = 0, 4, 5, 3
 
 
 def glob_match(pattern: str, path: str) -> bool:
-    """`**` = any folders (or none), `*` = anything but `/`, `?` = one character. A pattern without `/` matches a name anywhere."""
+    """`**` = any folders (or none), `*` = anything but `/`, `?` = one character; case does not matter. A pattern without `/` matches a name anywhere."""
     if "/" not in pattern:
         pattern = "**/" + pattern
     rx, i = "", 0
@@ -2409,7 +2451,7 @@ def glob_match(pattern: str, path: str) -> bool:
             rx, i = rx + "[^/]", i + 1
         else:
             rx, i = rx + re.escape(pattern[i]), i + 1
-    return re.fullmatch(rx, path) is not None
+    return re.fullmatch(rx, path, re.IGNORECASE) is not None  # StripeCheckout.jsx is money too
 
 
 def _apps(text: str | None) -> dict[str, tuple[str, str]]:
@@ -2502,7 +2544,7 @@ def local_change(base: str, head: str | None):
     numstats = [git("diff", "--numstat", "-M", rng).stdout]
     if head is None:  # uncommitted work counts too
         numstats.append(git("diff", "--numstat", "HEAD").stdout)
-        for line in git("status", "--porcelain").stdout.splitlines():
+        for line in git("status", "--porcelain", "--untracked-files=all").stdout.splitlines():  # each new file, not its folder
             code, name = line[:2].strip() or "M", line[3:].split(" -> ")[-1].strip()
             changes.append(("A" if code == "??" else code[0], name, name))
             if code == "??" and (ROOT / name).is_file() and not _excluded(name):
@@ -3135,7 +3177,9 @@ DEFAULTS = {
                    "review_marker": "REVIEW: PASS", "required_check": "checks"},
     "red_lane": {"paths": [".github/**", "tools/check", "tools/checks/**", "tools/hooks/**", ".claude/hooks/**",
                            ".claude/settings.json", "kit.json", "AGENTS.md", "CLAUDE.md", "GEMINI.md", "**/migrations/**", "migrations/**",
-                           "**/*.sql", ".env", "**/.env*"],
+                           "**/*.sql", "supabase/**", "prisma/**", "**/stripe*/**", "**/*stripe*",
+                           "**/billing/**", "**/*billing*", "**/payments/**", "**/*payment*", "**/pricing/**",
+                           "**/*pricing*", "**/checkout/**", ".env", "**/.env*"],
                  "green_exceptions": ["tools/checks/test_floor.txt"]},
     "roles": {},
 }
