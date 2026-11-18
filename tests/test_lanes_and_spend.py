@@ -158,3 +158,11 @@ def test_the_floor_reads_and_counts(tmp_path):
     assert floor.parse_collected("22 tests collected, 1 error in 0.1s") is None
     (tmp_path / "test_a.py").write_text("def test_one():\n    pass\nclass TestB:\n    def test_two(self):\n        pass\ndef helper():\n    pass\n")
     assert floor.static_count(tmp_path) == 2
+
+
+def test_every_pip_cache_names_the_kit_requirements():
+    """setup-python's pip cache fails the job when no requirements.txt exists (gameday-hq's first check, 18 Nov 2026)."""
+    for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        for line in wf.read_text(encoding="utf-8").splitlines():
+            if "cache: pip" in line:
+                assert "cache-dependency-path:" in line, f"{wf.name}: 'cache: pip' without cache-dependency-path"

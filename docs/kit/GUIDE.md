@@ -525,16 +525,17 @@ The kit's gates were run red and green in a scratch repository before it was sen
 
 | Scenario | 1.1.0 | 1.1.1 |
 | --- | --- | --- |
-| Kit tests pass | 24 passed | 38 passed |
+| Kit tests pass | 24 passed | 39 passed |
 | `bash tools/check` on a fresh install | GREEN | GREEN |
 | Break a test | RED | RED |
 | Edit an existing test and product in one change | RED | RED |
-| Delete a test file | **GREEN** (floor was 0) | RED (floor set to 38 at install) |
+| Delete a test file | **GREEN** (floor was 0) | RED (floor set to 39 at install) |
 | Touch a red-lane path | nothing flags it | flagged, exit 4 |
 | Lower the test floor | nothing flags it | flagged, exit 4 |
 | Spend over the cap | nothing counts it | exit 2; a run that would pass the cap is refused; WARN at 82% |
 | Add a test and raise the floor with product code | — | GREEN, green lane |
 | The files in `KIT.md` against the installer | — | 0 differences (70 files) |
+| The `checks` job on GitHub (gameday-hq pull request 1) | — | first run failed in 3 s (pip cache wanted a requirements.txt); fixed in 1.1.1 and held by a test |
 
 Not tested in 1.1.1: `lane.py --pr` against a real pull request on GitHub (its parts are tested with recorded answers), and the ruleset with code owners on.
 

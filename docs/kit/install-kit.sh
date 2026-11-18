@@ -637,7 +637,7 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }          # the protected-files rule compares with the base branch
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12", cache: pip }
+        with: { python-version: "3.12", cache: pip, cache-dependency-path: requirements-kit.txt }   # without the path, the cache step fails when there is no requirements.txt (gameday-hq, 18 Nov 2026)
       # For a JavaScript project add actions/setup-node@v4 and `npm ci` here; the kit's tools themselves need Python 3.
       - name: install
         run: |
@@ -705,7 +705,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12", cache: pip }
+        with: { python-version: "3.12", cache: pip, cache-dependency-path: requirements-kit.txt }   # without the path, the cache step fails when there is no requirements.txt (gameday-hq, 18 Nov 2026)
       - name: install
         run: if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: what was read last time (so unchanged sources are not read again)
@@ -904,6 +904,12 @@ One entry per lesson, written the day it happens, blameless: what happened, not 
 refuses an entry with a missing line, or one that names a check file that does not exist. An entry marked `kit: yes`
 would help every project: the kit-improvement review carries it to the kit's home repository, so the next project
 starts with it. Keep entries short; the git history and the linked pull request hold the detail.
+
+## 2026-11-18 — the required check failed in 3 seconds on a project with no requirements.txt
+- **What happened:** on gameday-hq's first pull request, `actions/setup-python` with `cache: pip` stopped the `checks` job before any test ran.
+- **Why:** the pip cache looks for `requirements.txt` or `pyproject.toml` unless it is told the file; the kit's is `requirements-kit.txt`.
+- **Now held by:** `tests/test_lanes_and_spend.py` (every pip cache in a workflow names its dependency file)
+- **kit:** yes — shipped in kit 1.1.1
 
 ## 2026-11-18 — Python's cache folders counted as a product change
 - **What happened:** the rule "a product change must update STATE.md" fired on `__pycache__/` folders the tests had written.
@@ -1577,6 +1583,14 @@ def test_the_floor_reads_and_counts(tmp_path):
     assert floor.parse_collected("22 tests collected, 1 error in 0.1s") is None
     (tmp_path / "test_a.py").write_text("def test_one():\n    pass\nclass TestB:\n    def test_two(self):\n        pass\ndef helper():\n    pass\n")
     assert floor.static_count(tmp_path) == 2
+
+
+def test_every_pip_cache_names_the_kit_requirements():
+    """setup-python's pip cache fails the job when no requirements.txt exists (gameday-hq's first check, 18 Nov 2026)."""
+    for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        for line in wf.read_text(encoding="utf-8").splitlines():
+            if "cache: pip" in line:
+                assert "cache-dependency-path:" in line, f"{wf.name}: 'cache: pip' without cache-dependency-path"
 __KIT_FILE_END_q7x2__
 put 'tests/test_ops.py' <<'__KIT_FILE_END_q7x2__'
 """The operating registers are held by tests: the app register is safe, every lesson names a real check, and the

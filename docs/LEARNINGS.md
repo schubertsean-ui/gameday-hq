@@ -5,6 +5,12 @@ refuses an entry with a missing line, or one that names a check file that does n
 would help every project: the kit-improvement review carries it to the kit's home repository, so the next project
 starts with it. Keep entries short; the git history and the linked pull request hold the detail.
 
+## 2026-11-18 — the required check failed in 3 seconds on a project with no requirements.txt
+- **What happened:** on gameday-hq's first pull request, `actions/setup-python` with `cache: pip` stopped the `checks` job before any test ran.
+- **Why:** the pip cache looks for `requirements.txt` or `pyproject.toml` unless it is told the file; the kit's is `requirements-kit.txt`.
+- **Now held by:** `tests/test_lanes_and_spend.py` (every pip cache in a workflow names its dependency file)
+- **kit:** yes — shipped in kit 1.1.1
+
 ## 2026-11-18 — Python's cache folders counted as a product change
 - **What happened:** the rule "a product change must update STATE.md" fired on `__pycache__/` folders the tests had written.
 - **Why:** generated files were not ignored by git.
