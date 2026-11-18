@@ -1,0 +1,189 @@
+{
+  "_what": "The one settings file for the kit's tools. Change the values for your project; the tools read it. It is a protected file: a build session cannot change it (tools/hooks/protect_tests.py).",
+  "owner": "Sean Schubert",
+  "owner_github": "schubertsean-ui",
+  "project": "My Project",
+  "repo": "schubertsean-ui/gameday-hq",
+  "kit_home": "schubertsean-ui/owner-run-kit",
+  "live_url": "https://example.com/",
+  "stamp_url": "",
+  "max_age_hours": 11,
+  "product_dirs": [
+    "src/",
+    "app/",
+    "site/",
+    "public/",
+    "schema/",
+    "sources/"
+  ],
+  "test_command": "python3 -m pytest -q -p no:cacheprovider tests",
+  "quick_test_command": "python3 -m pytest -q -x -p no:cacheprovider tests",
+  "extra_checks": [],
+  "protected_dirs": [
+    "tests/",
+    "fixtures/",
+    "tools/checks/",
+    "tools/hooks/"
+  ],
+  "protected_files": [
+    "kit.json",
+    "tools/check",
+    ".github/workflows/checks.yml",
+    ".github/CODEOWNERS",
+    ".claude/settings.json",
+    "pyproject.toml",
+    "package.json",
+    "Makefile"
+  ],
+  "protected_names": [
+    "conftest.py",
+    "pytest.ini",
+    "tox.ini",
+    "setup.cfg",
+    "jest.config.js",
+    "vitest.config.ts"
+  ],
+  "spec_session_env": "SPEC_SESSION",
+  "limits": {
+    "agents_max_lines": 100,
+    "state_max_bytes": 20000,
+    "next_max_chars": 700,
+    "next_max_lines": 3,
+    "waiting_max_items": 10,
+    "waiting_item_max_chars": 1200
+  },
+  "rules_and_records": [
+    "docs/",
+    ".claude/",
+    "tools/hooks/",
+    "tools/checks/",
+    "tools/check",
+    "prompts/"
+  ],
+  "where_things_stand": [
+    "NEXT.md",
+    "STATE.md"
+  ],
+  "minutes": {
+    "plan_minutes": 3000,
+    "limit": 2400,
+    "over_limit_short_run_after_hours": 10
+  },
+  "slos": {
+    "_what": "The targets the weekly scorecard judges against. A missed target is an error budget spent: reliability work comes before new work (faults first).",
+    "freshness_hours": 11,
+    "orders_pass_rate": 0.99,
+    "lead_time_hours": 24,
+    "change_failure_rate": 0.15,
+    "restore_hours": 24
+  },
+  "publish_workflow": "publish",
+  "publisher": {
+    "host": "vercel",
+    "_what": "gameday-hq: Vercel builds and publishes main after each green merge (green lane). .github/workflows/publish.yml is manual-only here, with no schedule; the freshness watch and the scorecard's publish count should read Vercel's deployments, not that workflow."
+  },
+  "check_workflow": "checks",
+  "monthly_cap_usd": 50,
+  "spend_warn_at": 0.8,
+  "spend": {
+    "_what": "The month's spend is the larger of the ledger (every paid run, estimate before, actual after) and the bills copied from each provider. tools/spend.py reads both. The hard backstop is the cap the owner sets on each provider's own billing page.",
+    "ledger": "docs/SPEND_LEDGER.yaml",
+    "bills": "docs/SPEND.yaml"
+  },
+  "auto_merge": {
+    "_what": "The green lane: the AI merges its own pull request only when tools/checks/lane.py --pr <n> says MERGE OK.",
+    "max_changed_lines": 400,
+    "size_exclude": [
+      "package-lock.json",
+      "yarn.lock",
+      "pnpm-lock.yaml",
+      "poetry.lock",
+      "Cargo.lock",
+      "*.lock"
+    ],
+    "review_marker": "REVIEW: PASS",
+    "required_check": "checks"
+  },
+  "red_lane": {
+    "_what": "Paths that put a pull request in the red lane: the AI never merges it; it waits for the owner (NEXT.md, 'Waiting on owner'). ** = any folders. The owner's decision of 18 Nov 2026: database changes (migrations, schema, production data) and anything touching money (payments, Stripe, billing, pricing, paid services) are red; publishing the site after a green merge is green. Also red: an existing test changed or deleted, the test floor lowered, a new app (or a changed plan or cap) in docs/APPS.yaml. Raising the test floor is green. This gate, not the code host's code-owner review, holds the red lane: the AI works through the owner's own GitHub account.",
+    "paths": [
+      ".github/**",
+      "tools/check",
+      "tools/checks/**",
+      "tools/hooks/**",
+      ".claude/hooks/**",
+      ".claude/settings.json",
+      "kit.json",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "GEMINI.md",
+      "**/migrations/**",
+      "migrations/**",
+      "**/*.sql",
+      "**/schema.sql",
+      "**/schema.prisma",
+      "supabase/**",
+      "prisma/**",
+      "**/db/schema*",
+      "**/seeds/**",
+      "**/stripe*/**",
+      "**/*stripe*",
+      "**/billing/**",
+      "**/*billing*",
+      "**/payments/**",
+      "**/*payment*",
+      "**/pricing/**",
+      "**/*pricing*",
+      "**/plans.json",
+      "**/checkout/**",
+      ".env",
+      "**/.env*",
+      "**/secrets/**",
+      "vercel.json",
+      "netlify.toml",
+      "wrangler.toml",
+      "fly.toml",
+      "render.yaml",
+      "Procfile",
+      "Dockerfile",
+      "**/CNAME",
+      "LICENSE*"
+    ],
+    "green_exceptions": [
+      "tools/checks/test_floor.txt"
+    ]
+  },
+  "roles": {
+    "_what": "Which model does each job. Chosen by current independent rankings (for example LMArena, Artificial Analysis, SWE-bench), mixing vendors freely. The reviewer is a different model, and a different vendor where possible, from the builder. Every value below is a DEFAULT TO REVISIT, picked 18 Nov 2026 from the vendors' own release notes, not from a ranking: the weekly review checks the rankings and changes them. claude_code is the alias the .claude/agents files use when the role runs inside Claude Code.",
+    "coordinator": {
+      "model": "claude-opus-5.5",
+      "vendor": "Anthropic",
+      "claude_code": "opus",
+      "job": "plans, hands out steps, merges through the green-lane gate, writes the morning summary"
+    },
+    "builder": {
+      "model": "claude-sonnet-5.5",
+      "vendor": "Anthropic",
+      "claude_code": "sonnet",
+      "job": "writes the code for one work order, test first"
+    },
+    "reviewer": {
+      "model": "gpt-6.2-astra",
+      "vendor": "OpenAI",
+      "claude_code": "opus",
+      "job": "reads the finished diff it did not write and passes or fails it (prompts/reviewer-brief.md); run in Codex or another tool of the other vendor, Claude Code only as the fallback"
+    },
+    "reader": {
+      "model": "claude-haiku-5.5",
+      "vendor": "Anthropic",
+      "claude_code": "haiku",
+      "job": "reads many saved pages and writes one structured result per item"
+    },
+    "scout": {
+      "model": "gemini-4-hydrogen",
+      "vendor": "Google",
+      "claude_code": "haiku",
+      "job": "read-only look-ups: inventories, terms pages, large files"
+    }
+  }
+}

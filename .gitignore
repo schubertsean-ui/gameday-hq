@@ -1,0 +1,11 @@
+# Generated files never count as a change (without this, Python's cache folders made the record rule fail: kit test, 18 Nov 2026)
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+node_modules/
+.claude/worktrees/
+CHECK_FAILED.txt
+data/api_cache/
+data/api_circuit.json
+data/api_usage.jsonl

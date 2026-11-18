@@ -1,0 +1,88 @@
+# docs/APPS.yaml — every outside app, connector and service the project uses, and how each one is held to account.
+# `python3 tools/apps.py check` refuses an entry with an empty field, a paid app with no hard cap, a key that can
+# write held by an AI session, or a write-capable app allowed in a session that reads outside text. `apps.py due`
+# lists reviews that are due (the weekly review does them). Replace the examples with your own; keep one entry per app.
+#
+# kind:     service | connector | api       (api = the product's own code calls it, through tools/api_client.py)
+# access:   read | write | deploy | admin                          (the most it can do with the key it is given)
+# key_held_by: owner | code-host-secret | ai-session-read-only | none
+# cap:      the hard monthly limit set AT the provider ("$5/month Actions budget"), or "free tier, no card on file"
+# usage_from: where real usage and spend are read (a page, an API, a command) — never an estimate
+# fallback: what is used if this app is not available (see the guide, "Alternatives")
+# For kind: api, also — auth_scope (the narrowest key the provider offers), rate_limit (as the provider states it, with
+# its page), daily_call_limit (a number; 0 = none stated), key_rotation (the date the key is next replaced), terms (the
+# terms page, and the ask-the-lawyer item if any), canary_url (one cheap call), contract_fields (the fields the product
+# reads, dotted; * = each item of a list). `python3 tools/apps.py canary` calls each canary and fails when a field the
+# product reads has gone: the API changed under us.
+- name: GitHub
+  kind: service
+  used_for: code home, the required check, publishing runs
+  access: admin
+  key_held_by: owner
+  plan: Team
+  cap: "$5/month Actions budget (Billing → Budgets)"
+  unit_cost: "Actions minutes past the plan's 3,000 a month"
+  usage_from: "python3 tools/minutes_budget.py --kind full; Billing → Usage"
+  fallback: "GitLab (protected main + Pipelines must succeed)"
+  in_sessions_that_read_outside_text: false
+  last_review: 2026-11-18
+  next_review: 2026-12-18
+- name: Claude
+  kind: service
+  used_for: the coordinator, helpers, scheduled tasks
+  access: write
+  key_held_by: owner
+  plan: Max
+  cap: "the plan's own limit; no pay-as-you-go key without a hard cap"
+  unit_cost: "plan usage per step (see /usage in Claude Code)"
+  usage_from: "Settings → Usage"
+  fallback: "Codex, Cursor or Gemini CLI reading AGENTS.md"
+  in_sessions_that_read_outside_text: true
+  last_review: 2026-11-18
+  next_review: 2026-12-18
+- name: Hosted database
+  kind: service
+  used_for: the record the publishing run writes and the site is built from
+  access: write
+  key_held_by: code-host-secret
+  plan: free
+  cap: "free tier, no card on file"
+  unit_cost: "storage MB against the free 500 MB"
+  usage_from: "the publishing run's database-size line"
+  fallback: "a throwaway database rebuilt each run from files kept in git"
+  in_sessions_that_read_outside_text: false
+  last_review: 2026-11-18
+  next_review: 2026-12-18
+- name: Web reading service
+  kind: connector
+  used_for: finding where each source publishes, once per source
+  access: read
+  key_held_by: ai-session-read-only
+  plan: pay per page
+  cap: "1,000 pages to start, then the owner's yes"
+  unit_cost: "credits per page"
+  usage_from: "the provider's dashboard"
+  fallback: "direct reading with a real browser; public crawl indexes"
+  in_sessions_that_read_outside_text: true
+  last_review: 2026-11-18
+  next_review: 2026-12-18
+- name: Example events API
+  kind: api
+  used_for: event listings for the first market
+  access: read
+  key_held_by: code-host-secret
+  plan: free
+  cap: "free tier, no card on file"
+  unit_cost: "one call per page of 200 events"
+  usage_from: "python3 tools/api_usage.py --days 7; the provider's developer dashboard"
+  fallback: "the venues' own pages, read directly"
+  in_sessions_that_read_outside_text: false
+  auth_scope: "read-only consumer key"
+  rate_limit: "5 per second, 5,000 per day (the provider's rate-limit page)"
+  daily_call_limit: 5000
+  key_rotation: 2027-02-18
+  terms: "https://example.com/terms — ask-the-lawyer item 1"
+  canary_url: "https://api.example.com/v2/events.json?size=1"
+  contract_fields: ["_embedded.events.*.name", "_embedded.events.*.dates.start.dateTime"]
+  last_review: 2026-11-18
+  next_review: 2026-12-18

@@ -1,0 +1,51 @@
+# Example orders — replace with your own. Each shape of test appears once. Run: python3 tools/orders.py plan
+- id: Example.01
+  kind: build
+  what: "The opening page answers"
+  from: "ours: the build writes it"
+  kept: "the built folder"
+  shown: "the opening page"
+  pass: "The opening page answers 200 (every product has one)"
+  test: {type: answers, page: "/"}
+  how:
+    - "Build the product with the project's build command and publish it"
+  if_it_fails:
+    - "The page does not answer: the publishing run did not finish — read the run's log, start it again, watch it"
+    - "The address points at the wrong host: check the domain settings at the host (an owner step if it needs an account)"
+  needs: []
+  owner: "no"
+
+- id: Example.02
+  kind: build
+  what: "The opening page never shows internal words"
+  from: "ours"
+  kept: "the templates"
+  shown: "every page"
+  pass: "None of the words a customer should never see appear (AGENTS.md, What customers see)"
+  test: {type: text, page: "/", lacks: ["\\bunknown\\b", "not listed", "TODO", "lorem ipsum"]}
+  how:
+    - "Leave a missing fact out of the template instead of printing a placeholder"
+  if_it_fails:
+    - "A placeholder word is on the page: find the template that prints it and leave the field out when it is empty"
+    - "A sample value from the mockup is on the page: replace it with the real value from the record, or leave it out"
+  needs: [Example.01]
+  owner: "no"
+
+- id: Example.03
+  kind: fault
+  what: "The product check runs green"
+  from: "ours"
+  kept: "tests/"
+  shown: "the code host's required check"
+  pass: "bash tools/check exits 0"
+  test: {type: command, run: "bash tools/check --quick"}
+  how:
+    - "Fix the product until the check is green; never the test"
+  if_it_fails:
+    - "A test fails: fix the product it judges, add a test from the real failure"
+    - "The check cannot run: install what it names (NOT RUN lines), then run it again"
+  needs: []
+  owner: "no"
+  found: "2026-11-18"
+  seen_how: "bash tools/check --quick (example)"
+  next: "Run the check and fix what it names"

@@ -1,0 +1,42 @@
+{
+  "_comment": "Claude Code project settings. Every hook is started through tools/hooks/run, found by $CLAUDE_PROJECT_DIR or git's top level, never by the working directory: a relative path once made every tool call fail after one cd. A hook that cannot be found exits 1 (reported), never 2 (block). tests/test_harness.py holds this in place. 'opusplan' = the large model plans, the mid model writes.",
+  "model": "opusplan",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "r=\"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}/tools/hooks/run\"; [ -f \"$r\" ] || r=\"$(git rev-parse --show-toplevel 2>/dev/null)/tools/hooks/run\"; [ -f \"$r\" ] || { echo \"hook launcher not found; this guard did not run\" >&2; exit 1; }; exec sh \"$r\" session_start.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "r=\"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}/tools/hooks/run\"; [ -f \"$r\" ] || r=\"$(git rev-parse --show-toplevel 2>/dev/null)/tools/hooks/run\"; [ -f \"$r\" ] || { echo \"hook launcher not found; this guard did not run\" >&2; exit 1; }; exec sh \"$r\" protect_tests.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "r=\"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}/tools/hooks/run\"; [ -f \"$r\" ] || r=\"$(git rev-parse --show-toplevel 2>/dev/null)/tools/hooks/run\"; [ -f \"$r\" ] || { echo \"hook launcher not found; this guard did not run\" >&2; exit 1; }; exec sh \"$r\" stop_product_check.py",
+            "timeout": 300
+          }
+        ]
+      }
+    ]
+  }
+}

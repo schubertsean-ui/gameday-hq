@@ -1,0 +1,6 @@
+# docs/SPEND_LEDGER.yaml — every paid run: its estimate BEFORE it starts, its actual cost AFTER (tools/spend.py writes it).
+# Before a paid run: python3 tools/spend.py before --provider "OpenAI" --what "reviewer, PR #12" --estimate 0.40
+# After it:          python3 tools/spend.py after <id> --actual 0.31      (read the real figure from the provider)
+# The month's total against kit.json "monthly_cap_usd": python3 tools/spend.py status (exit 2 at or over the cap).
+# Unpaid work (a plan's included usage, free tiers) is not logged. Never edit an old line to make room under the cap.
+[]

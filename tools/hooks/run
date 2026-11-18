@@ -1,0 +1,19 @@
+#!/bin/sh
+# tools/hooks/run <hook>.py — start one of this repository's AI-session hooks from ANY working directory.
+#
+# Why: a hook started as `python3 tools/hooks/<hook>.py` only resolves while the shell sits at the repository root.
+# One `cd` into a subfolder makes python3 exit 2 ("can't open file"), and Claude Code reads exit 2 from a PreToolUse
+# hook as "block this tool call" — so every tool is refused, including the one that would move back. A session died
+# that way (Happening, 13 Nov 2026).
+#
+# This launcher finds the hooks by its own location, never by the working directory. .claude/settings.json reaches it
+# through $CLAUDE_PROJECT_DIR, falling back to git's top level. A hook that cannot be found exits 1 (shown, not
+# blocking): a missing guard is reported; it never bricks the session.
+dir=$(CDPATH= cd -- "$(dirname -- "$0")" 2>/dev/null && pwd)
+hook="$dir/$1"
+if [ -z "$1" ] || [ ! -f "$hook" ]; then
+  echo "tools/hooks/run: hook '$1' not found in '$dir' — this guard did NOT run" >&2
+  exit 1
+fi
+cd "$dir/../.." || exit 1
+exec python3 "$hook"

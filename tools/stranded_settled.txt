@@ -1,0 +1,4 @@
+# Branch tips that have been looked at and settled: full commit, then why. tools/stranded.py leaves these out.
+# A new push to the branch moves its tip, and it is counted again.
+# Example:
+# 0123456789abcdef0123456789abcdef01234567 my-branch — on main since 18 Nov 2026 as pull request 12 (merged as one change)

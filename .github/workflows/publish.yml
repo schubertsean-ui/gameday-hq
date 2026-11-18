@@ -1,0 +1,99 @@
+# publish.yml — the product's own timetable: build the product and put it live. The AI does not hold the keys this uses.
+# Starts: once a day on its own schedule, when started by hand (Actions → publish → Run workflow), or by the freshness
+# watch (prompts/freshness-watch.md), which starts it only when the live product is older than its limit.
+# Never on every merge: a merge that starts a long run burns the month's minutes (Happening, 18 Nov 2026).
+# Host: GitHub Pages (Settings → Pages → Source: "GitHub Actions"). Other hosts: replace the last two jobs.
+#
+# gameday-hq (18 Nov 2026): VERCEL IS THE PUBLISHER. Vercel builds and publishes this repository itself after each green
+# merge to main, so this workflow has NO schedule here (a daily run would only duplicate Vercel and fail at the GitHub
+# Pages step, which is not switched on). It stays as a manual-only fallback with the real build command (`npm run build`,
+# checked 18 Nov 2026: it needs no secrets). kit.json "publisher" records this. Bringing the schedule back is red lane.
+name: publish
+on:
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: "short = refresh what changes often; full = everything"
+        type: choice
+        options: ["full", "short"]
+        default: "full"
+  # schedule: none here — Vercel publishes gameday-hq (see the top of this file). The kit's default was:
+  #   - cron: "47 3 * * *"
+permissions:
+  contents: read
+  actions: read                    # tools/minutes_budget.py reads this month's runs
+  pages: write
+  id-token: write
+concurrency:
+  group: publish                   # two publishing runs never overlap
+  cancel-in-progress: false
+env:
+  BUILD_FULL: "npm install --no-audit --no-fund && npm run build"             # package.json "build": react-scripts build
+  BUILD_SHORT: "npm install --no-audit --no-fund && npm run build"            # the site has no shorter refresh
+  SITE_DIR: "build"                                                            # the folder react-scripts writes
+  MIN_PAGES: "1"                                                               # never publish fewer pages than this
+jobs:
+  due:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      run: ${{ steps.b.outputs.run }}
+      kind: ${{ steps.b.outputs.kind }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: b
+        name: do this month's minutes allow the run? (over the limit the full run stands down)
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          set +e
+          kind="${{ inputs.kind || 'full' }}"
+          python3 tools/minutes_budget.py --kind "$kind"; code=$?
+          echo "kind=$kind" >> "$GITHUB_OUTPUT"
+          if [ "$code" = "1" ]; then echo "run=0" >> "$GITHUB_OUTPUT"; else echo "run=1" >> "$GITHUB_OUTPUT"; fi
+  build:
+    needs: due
+    if: needs.due.outputs.run == '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}          # lives only in the host's secrets; no AI session holds it
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip, cache-dependency-path: requirements-kit.txt }   # without the path, the cache step fails when there is no requirements.txt (gameday-hq, 18 Nov 2026)
+      - name: install
+        run: if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: what was read last time (so unchanged sources are not read again)
+        uses: actions/cache@v4
+        with:
+          path: data/cache
+          key: kept-${{ github.run_id }}
+          restore-keys: kept-
+      - name: build
+        run: |
+          if [ "${{ needs.due.outputs.kind }}" = "short" ]; then eval "$BUILD_SHORT"; else eval "$BUILD_FULL"; fi
+      - name: never publish an empty product (the product already live stays as it is)
+        run: |
+          n=$(find "$SITE_DIR" -name '*.html' | wc -l)
+          echo "pages built: $n"
+          if [ "$n" -lt "$MIN_PAGES" ]; then echo "::error::only $n pages - refusing to publish"; exit 2; fi
+      - name: what the API calls did against each provider's limit (tools/api_client.py writes one line per call)
+        if: always()
+        run: python3 tools/api_usage.py || true
+      - name: keep the API usage for the weekly review
+        if: always() && hashFiles('data/api_usage.jsonl') != ''
+        uses: actions/upload-artifact@v4
+        with: { name: "api-usage-${{ github.run_id }}", path: data/api_usage.jsonl, retention-days: 30 }
+      - name: publish time, for hosts that set no Last-Modified (tools/freshness.py reads it)
+        run: date -u +%Y-%m-%dT%H:%M:%SZ > "$SITE_DIR/published.txt"
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: "${{ env.SITE_DIR }}" }
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.go.outputs.page_url }}
+    steps:
+      - id: go
+        uses: actions/deploy-pages@v4

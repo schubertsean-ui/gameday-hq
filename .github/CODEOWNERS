@@ -1,0 +1,50 @@
+# .github/CODEOWNERS — the red lane, written down. It mirrors kit.json "red_lane"."paths" (tests/test_lanes_and_spend.py
+# holds the two together) so anyone reading the repository can see which paths wait for the owner.
+# It is DOCUMENTATION here, not the lock: the AI works through the owner's own GitHub account, and GitHub does not let
+# an account approve its own pull request, so the ruleset for main does NOT turn on "Require review from Code Owners"
+# (that would block every red-lane merge, the owner's too). The red lane is held by tools/checks/lane.py (the AI merges
+# only on MERGE OK), NEXT.md "Waiting on owner" and the morning summary in STATE.md (the owner decision of 18 Nov 2026).
+/.github/               @schubertsean-ui
+/tools/check            @schubertsean-ui
+/tools/checks/          @schubertsean-ui
+/tools/hooks/           @schubertsean-ui
+/.claude/hooks/         @schubertsean-ui
+/.claude/settings.json  @schubertsean-ui
+/kit.json               @schubertsean-ui
+/AGENTS.md              @schubertsean-ui
+/CLAUDE.md              @schubertsean-ui
+/GEMINI.md              @schubertsean-ui
+migrations/             @schubertsean-ui
+/migrations/            @schubertsean-ui
+*.sql                   @schubertsean-ui
+schema.sql              @schubertsean-ui
+schema.prisma           @schubertsean-ui
+/supabase/              @schubertsean-ui
+/prisma/                @schubertsean-ui
+**/db/schema*           @schubertsean-ui
+seeds/                  @schubertsean-ui
+stripe*/                @schubertsean-ui
+*stripe*                @schubertsean-ui
+billing/                @schubertsean-ui
+*billing*               @schubertsean-ui
+payments/               @schubertsean-ui
+*payment*               @schubertsean-ui
+pricing/                @schubertsean-ui
+*pricing*               @schubertsean-ui
+plans.json              @schubertsean-ui
+checkout/               @schubertsean-ui
+/.env                   @schubertsean-ui
+.env*                   @schubertsean-ui
+secrets/                @schubertsean-ui
+/vercel.json            @schubertsean-ui
+/netlify.toml           @schubertsean-ui
+/wrangler.toml          @schubertsean-ui
+/fly.toml               @schubertsean-ui
+/render.yaml            @schubertsean-ui
+/Procfile               @schubertsean-ui
+/Dockerfile             @schubertsean-ui
+CNAME                   @schubertsean-ui
+/LICENSE*               @schubertsean-ui
+# Raising the test floor is green (tools/checks/floor.py raise); a line with no owner leaves it to the check.
+# Lowering it is still red: tools/checks/lane.py flags it and the AI never merges it.
+/tools/checks/test_floor.txt
